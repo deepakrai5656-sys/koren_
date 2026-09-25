@@ -6,6 +6,7 @@ import hmac
 import logging
 import asyncio
 import os
+import httpx
 from scraper import MyDramaListScraper
 import time
 
@@ -486,6 +487,111 @@ async def get_airing_calendar():
         raise HTTPException(
             status_code=500,
             detail={"code": 500, "error": True, "description": "Internal server error"}
+        )
+
+
+# --- YouTube Data API -------------------------------------------------------
+# Keep the API key server-side in the Vercel environment variable
+# `YOUTUBE_API_KEY`. Never expose it in the frontend.
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
+
+@app.get("/api/youtube", tags=["YouTube"],
+         summary="Search YouTube videos",
+         description="Searches YouTube for movie/trailer videos using the server-side YouTube Data API key.")
+async def youtube_search(q: str, max_results: int = 8):
+    """Search YouTube videos for the Movies Explain frontend."""
+    if not YOUTUBE_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": 500,
+                "error": True,
+                "description": "YOUTUBE_API_KEY is not configured on the server"
+            }
+        )
+
+    q = q.strip()
+    if not q:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": 400,
+                "error": True,
+                "description": "Search query is required"
+            }
+        )
+
+    max_results = max(1, min(max_results, 25))
+
+    params = {
+        "part": "snippet",
+        "q": q,
+        "type": "video",
+        "maxResults": max_results,
+        "key": YOUTUBE_API_KEY,
+        "safeSearch": "moderate",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://www.googleapis.com/youtube/v3/search",
+                params=params
+            )
+
+        data = response.json()
+
+        if response.status_code != 200:
+            logger.error("YouTube API error: %s", data)
+            return JSONResponse(
+                status_code=response.status_code,
+                content={
+                    "code": response.status_code,
+                    "error": True,
+                    "description": data.get("error", {}).get(
+                        "message", "YouTube API request failed"
+                    )
+                }
+            )
+
+        results = []
+        for item in data.get("items", []):
+            video_id = item.get("id", {}).get("videoId")
+            snippet = item.get("snippet", {})
+
+            if not video_id:
+                continue
+
+            results.append({
+                "videoId": video_id,
+                "title": snippet.get("title", ""),
+                "description": snippet.get("description", ""),
+                "channelTitle": snippet.get("channelTitle", ""),
+                "publishedAt": snippet.get("publishedAt", ""),
+                "thumbnail": (
+                    snippet.get("thumbnails", {}).get("high", {}).get("url")
+                    or snippet.get("thumbnails", {}).get("medium", {}).get("url")
+                    or snippet.get("thumbnails", {}).get("default", {}).get("url")
+                ),
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "embedUrl": f"https://www.youtube.com/embed/{video_id}",
+            })
+
+        return {
+            "query": q,
+            "count": len(results),
+            "results": results
+        }
+
+    except Exception as e:
+        logger.error("YouTube request failed: %s", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": 500,
+                "error": True,
+                "description": "YouTube API request failed"
+            }
         )
 
 # Health check endpoint
