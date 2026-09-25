@@ -485,6 +485,7 @@ vercel --prod</code></pre>
                 { id: 'dramalist', title: 'Get User Watchlist', method: 'GET', path: '/api/dramalist/{param}', description: 'Get the public watchlist for a specific user.', param_placeholder: '9324969' },
                 { id: 'calendar', title: 'Get Airing Calendar', method: 'GET', path: '/api/calendar', description: 'Get currently airing dramas grouped by day of the week (Monday–Sunday).', param_placeholder: '' },
                 { id: 'health', title: 'Health Check', method: 'GET', path: '/api/health', description: 'A simple health check endpoint to verify API status.', param_placeholder: '' },
+                { id: 'youtube', title: 'Search YouTube Videos', method: 'GET', path: '/api/youtube?q={param}', description: 'Search YouTube videos using the server-side YouTube Data API key configured in Vercel.', param_placeholder: 'bollywood' },
             ];
             
             endpointsContainer.innerHTML = endpoints.map(ep => {
