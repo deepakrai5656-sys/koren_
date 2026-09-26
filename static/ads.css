@@ -1,0 +1,26 @@
+/* Monetization UI: keeps ad areas readable without shifting the page before ads load. */
+.ad-container {
+  width: min(100%, 1000px);
+  min-height: 90px;
+  margin: 22px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+}
+.ad-container--compact {
+  min-height: 70px;
+}
+.ad-container::before {
+  content: "";
+  display: block;
+  width: 100%;
+  min-height: 70px;
+}
+@media (max-width: 640px) {
+  .ad-container {
+    min-height: 70px;
+    margin: 16px auto;
+  }
+}
