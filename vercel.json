@@ -6,9 +6,7 @@
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.12",
-        "includeFiles": [
-          "static/**"
-        ]
+        "includeFiles": ["static/**"]
       }
     }
   ],
@@ -18,14 +16,12 @@
       "dest": "main.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/static/(.*)",
       "dest": "main.py"
-    }
-  ],
-  "crons": [
+    },
     {
-      "path": "/api/cron-trailers",
-      "schedule": "0 3 * * *"
+      "src": "/",
+      "dest": "main.py"
     }
   ]
 }
