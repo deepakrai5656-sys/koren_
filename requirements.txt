@@ -4,3 +4,4 @@ curl-cffi>=0.14.0
 beautifulsoup4==4.12.2
 python-multipart==0.0.6
 httpx
+firebase-admin>=6.5.0,<7
