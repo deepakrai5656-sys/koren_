@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import hmac
 import logging
 import asyncio
@@ -732,7 +732,10 @@ async def cron_trailers(request: Request):
     except Exception as exc:
         logger.exception("Persistent trailer job failed")
         raise HTTPException(status_code=500, detail={"error": True, "description": str(exc)})
-
+        
+@app.get("/", include_in_schema=False)
+async def home():
+    return FileResponse("static/index.html")
 # Health check endpoint
 @app.get("/api/health", tags=["Utility"], summary="Health check")
 async def health_check():
