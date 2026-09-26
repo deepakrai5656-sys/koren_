@@ -21,14 +21,12 @@
     {
       "src": "/(.*)",
       "dest": "main.py"
-    },
-    {
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron-trailers",
       "schedule": "0 3 * * *"
     }
-  ]
-}
   ]
 }
