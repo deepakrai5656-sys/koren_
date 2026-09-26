@@ -9,6 +9,9 @@ import os
 import httpx
 from scraper import MyDramaListScraper
 import time
+import json
+
+from firebase_admin import credentials, firestore, initialize_app, get_app
 
 # In-memory cache for calendar data
 _calendar_cache = {
@@ -128,7 +131,7 @@ scraper = MyDramaListScraper()
 # /api/health stays open on purpose: uptime checks shouldn't need a secret,
 # and it reveals nothing.
 API_KEY = os.environ.get("MDL_API_KEY", "").strip()
-OPEN_PATHS = {"/api/health"}
+OPEN_PATHS = {"/api/health", "/api/cron-trailers"}
 
 
 @app.middleware("http")
@@ -593,6 +596,142 @@ async def youtube_search(q: str, max_results: int = 8):
                 "description": "YouTube API request failed"
             }
         )
+
+
+
+# --- Persistent automatic trailers ----------------------------------------
+# Discovers recent Hindi/Bollywood and English/Hollywood trailers with the
+# existing server-side YouTube API key, then stores them in Firestore.
+# The public website reads `autoTrailers`; browser clients cannot write it.
+
+_firebase_app = None
+
+
+def _firebase_db():
+    global _firebase_app
+    try:
+        app_instance = get_app()
+    except ValueError:
+        raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+        if not raw:
+            raise RuntimeError("FIREBASE_SERVICE_ACCOUNT_JSON is not configured")
+        try:
+            service_account = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON") from exc
+        app_instance = initialize_app(credentials.Certificate(service_account))
+        _firebase_app = app_instance
+    return firestore.client(app_instance)
+
+
+async def _discover_trailers(query: str, max_results: int = 10):
+    if not YOUTUBE_API_KEY:
+        raise RuntimeError("YOUTUBE_API_KEY is not configured on the server")
+
+    params = {
+        "part": "snippet",
+        "q": query,
+        "type": "video",
+        "videoCategoryId": "24",
+        "order": "date",
+        "maxResults": max_results,
+        "safeSearch": "moderate",
+        "key": YOUTUBE_API_KEY,
+    }
+    async with httpx.AsyncClient(timeout=12.0) as client:
+        response = await client.get(
+            "https://www.googleapis.com/youtube/v3/search", params=params
+        )
+    data = response.json()
+    if response.status_code != 200:
+        message = data.get("error", {}).get("message", "YouTube API request failed")
+        raise RuntimeError(message)
+    return data.get("items", [])
+
+
+@app.get("/api/cron-trailers", tags=["YouTube"],
+         summary="Discover and save latest trailers",
+         description="Internal scheduled job: finds recent Hindi/Bollywood and English/Hollywood trailers and stores new videos in Firestore.")
+async def cron_trailers(request: Request):
+    # Keep the endpoint safe from arbitrary public calls. Vercel Cron sends
+    # x-vercel-cron=1; manual testing can use TRAILER_CRON_SECRET.
+    cron_header = request.headers.get("x-vercel-cron", "")
+    cron_secret = os.environ.get("TRAILER_CRON_SECRET", "").strip()
+    supplied_secret = request.headers.get("x-trailer-cron-secret", "")
+    if cron_header != "1":
+        if not cron_secret or not hmac.compare_digest(supplied_secret, cron_secret):
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    queries = [
+        "new Bollywood movie official trailer",
+        "new Hindi movie official trailer",
+        "new Hollywood movie official trailer",
+        "new English movie official trailer",
+    ]
+
+    try:
+        results = await asyncio.gather(*(_discover_trailers(q, 10) for q in queries))
+        items = []
+        seen = set()
+        excluded = ("song", "lyric", "reaction", "review", "explained", "#shorts")
+        for query, query_items in zip(queries, results):
+            language = "Hindi" if ("Bollywood" in query or "Hindi" in query) else "English"
+            for item in query_items:
+                video_id = str((item.get("id") or {}).get("videoId") or "").strip()
+                snippet = item.get("snippet") or {}
+                title = str(snippet.get("title") or "").strip()
+                lower = title.lower()
+                if not video_id or not title or video_id in seen:
+                    continue
+                if not ("trailer" in lower or "teaser" in lower):
+                    continue
+                if any(word in lower for word in excluded):
+                    continue
+                seen.add(video_id)
+                thumbnails = snippet.get("thumbnails") or {}
+                thumb = ((thumbnails.get("high") or {}).get("url") or
+                         (thumbnails.get("medium") or {}).get("url") or
+                         (thumbnails.get("default") or {}).get("url"))
+                items.append({
+                    "youtubeId": video_id,
+                    "title": title,
+                    "description": snippet.get("description") or "Latest trailer from YouTube.",
+                    "poster": thumb or f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+                    "category": "Trailers",
+                    "language": language,
+                    "duration": "YouTube",
+                    "rating": "N/A",
+                    "year": str(time.gmtime().tm_year),
+                    "publishedAt": snippet.get("publishedAt") or "",
+                    "channelTitle": snippet.get("channelTitle") or "",
+                    "source": "youtube-auto",
+                    "url": f"https://www.youtube.com/watch?v={video_id}",
+                    "embedUrl": f"https://www.youtube.com/embed/{video_id}",
+                    "updatedAt": firestore.SERVER_TIMESTAMP,
+                })
+
+        db = _firebase_db()
+        new_count = 0
+        batch = db.batch()
+        for item in items:
+            ref = db.collection("autoTrailers").document(item["youtubeId"])
+            snapshot = await asyncio.to_thread(ref.get)
+            if not snapshot.exists:
+                item["createdAt"] = firestore.SERVER_TIMESTAMP
+                batch.set(ref, item)
+                new_count += 1
+            else:
+                batch.set(ref, {"updatedAt": firestore.SERVER_TIMESTAMP}, merge=True)
+        if items:
+            await asyncio.to_thread(batch.commit)
+
+        logger.info("Persistent trailers: found=%s new=%s", len(items), new_count)
+        return {"ok": True, "found": len(items), "new": new_count}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Persistent trailer job failed")
+        raise HTTPException(status_code=500, detail={"error": True, "description": str(exc)})
 
 # Health check endpoint
 @app.get("/api/health", tags=["Utility"], summary="Health check")
