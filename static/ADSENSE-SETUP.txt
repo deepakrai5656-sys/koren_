@@ -1,0 +1,20 @@
+MOVIESEXPLAIN — ADSENSE SETUP
+================================
+
+1. Open public/ads-config.js
+2. Replace:
+   ca-pub-9518267907752226
+   with the exact publisher ID from your Google AdSense account.
+3. Deploy the public folder with Firebase.
+4. In Google AdSense, add/verify https://moviesexplain.in/ and enable Auto ads if desired.
+5. Create public/ads.txt using the exact line shown by AdSense under Sites > ads.txt.
+   Do not invent the publisher line.
+
+IMPORTANT
+---------
+- The ZIP intentionally does NOT contain a fake publisher ID.
+- Until a real publisher ID is entered, adsense.js will not load the AdSense script.
+- Firebase configuration values in the frontend are normal for Firebase web apps, but API keys
+  for YouTube/TMDB should be restricted in their respective dashboards.
+- AdSense earnings are not guaranteed and depend on traffic, geography, RPM, ad demand, content,
+  and user engagement.

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Explained in Hindi | MoviesExplain</title>
+  <meta name="description" content="Movie explanation, review, story and details in Hindi on MoviesExplain.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="googlebot" content="index, follow, max-image-preview:large">
+  <link rel="canonical" id="canonicalUrl" href="https://moviesexplain.in/">
+  <link rel="icon" type="image/png" href="/moviesexplain1-icon.webp">
+  <link rel="stylesheet" href="/ads.css?v=1">
+  <script src="/ads-config.js?v=1"></script>
+  <script defer src="/adsense.js?v=1"></script>
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="MoviesExplain">
+  <meta property="og:title" id="ogTitle" content="Movie Explained in Hindi | MoviesExplain">
+  <meta property="og:description" id="ogDescription" content="Movie explanation, review, story and details in Hindi on MoviesExplain.">
+  <meta property="og:image" id="ogImage" content="https://moviesexplain.in/moviesexplain-logo.webp">
+  <meta property="og:url" id="ogUrl" content="https://moviesexplain.in/">
+  <link rel="stylesheet" href="/style.css?v=2">
+  <link rel="stylesheet" href="/pages.css?v=2">
+  <style>
+    .movie-detail{max-width:1000px;margin:40px auto;padding:20px}.movie-detail-card{display:grid;grid-template-columns:280px 1fr;gap:30px;background:var(--panel-bg);border-radius:16px;padding:25px}.movie-detail-poster{width:100%;border-radius:12px;display:block}.movie-detail h1{font-size:38px;margin-bottom:12px}.movie-meta{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}.movie-meta span{background:var(--card-bg);padding:7px 12px;border-radius:20px}.movie-description{line-height:1.8;color:var(--text-muted);font-size:17px}.watch-btn{display:inline-block;margin-top:20px;padding:12px 20px;background:var(--accent-color);color:#fff;border-radius:8px;text-decoration:none;font-weight:700}.video-wrapper{margin-top:24px;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}.video-wrapper iframe{width:100%;height:100%;display:block;border:0}.back-link{display:inline-block;margin-bottom:20px;color:var(--text-main);text-decoration:none}@media(max-width:700px){.movie-detail-card{grid-template-columns:1fr}.movie-detail-poster{max-width:280px;margin:auto}.movie-detail h1{font-size:28px}}
+
+      .movie-detail-page-header .brand-mark{width:42px;height:42px;max-width:42px;object-fit:cover;border-radius:11px;flex:none;}
+    @media(max-width:640px){.movie-detail-page-header .brand-mark{width:38px;height:38px;max-width:38px;}}
+  </style>
+</head>
+<body>
+  <nav class="navbar professional-navbar movie-detail-page-header">
+  <div class="navbar-inner">
+    <a class="brand" href="/" aria-label="MoviesExplain Home">
+      <img class="brand-mark" src="/moviesexplain1-icon.webp" alt="MoviesExplain logo" loading="lazy" decoding="async">
+      <span class="brand-wordmark">Movies<span>Explain</span></span>
+    </a>
+  </div>
+</nav>
+  <main class="movie-detail">
+    <a class="back-link" href="/">← Back to Movies</a>
+    <div class="ad-container ad-container--compact" aria-label="Advertisement"><div class="ad-slot" data-ad-position="movie-top"></div></div>
+    <div id="loading" style="padding:40px;text-align:center">Loading movie… 🎬</div>
+    <article id="movieContent" class="movie-detail-card" style="display:none"></article>
+    <div class="ad-container ad-container--compact" aria-label="Advertisement"><div class="ad-slot" data-ad-position="movie-bottom"></div></div>
+    <div id="error" style="display:none;padding:40px;text-align:center">Movie not found. <a href="/">Browse all movies</a></div>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig={apiKey:"AIzaSyDVZXKdgtgi_khgs5fdAoJD3wxIJAqWE_M",authDomain:"moviemasala-6bc36.firebaseapp.com",projectId:"moviemasala-6bc36",storageBucket:"moviemasala-6bc36.firebasestorage.app",messagingSenderId:"1071084756205",appId:"1:1071084756205:web:abaa1ab013e311b3d7c0e4"};
+    firebase.initializeApp(firebaseConfig); const db=firebase.firestore();
+    const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const slug=s=>String(s||'').toLowerCase().trim().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    function getYouTubeId(value){ const v=String(value||'').trim(); if(!v) return ''; try{ const u=new URL(v); if(u.hostname.includes('youtu.be')) return u.pathname.split('/').filter(Boolean)[0]||''; if(u.hostname.includes('youtube.com')) return u.searchParams.get('v') || u.pathname.split('/').filter(Boolean).pop() || ''; }catch(e){} return v.split(/[?&]/)[0].replace(/^.*\//,'').trim(); }
+
+    function getSlug(){const p=location.pathname.split('/').filter(Boolean); if(p[0]==='movie'&&p[1]) return decodeURIComponent(p.slice(1).join('/')); return new URLSearchParams(location.search).get('slug')||'';}
+    function setMeta(movie){const title=`${movie.title||'Movie'} Explained in Hindi | MoviesExplain`; const desc=`${movie.title||'Movie'} movie explanation, story, review, rating and details in Hindi on MoviesExplain.`; const url=`https://moviesexplain.in/movie/${slug(movie.title)}`; document.title=title; document.querySelector('meta[name="description"]').setAttribute('content',desc); document.getElementById('canonicalUrl').href=url; document.getElementById('ogTitle').content=title; document.getElementById('ogDescription').content=desc; document.getElementById('ogUrl').content=url; if(movie.poster) document.getElementById('ogImage').content=movie.poster; let ld=document.getElementById('movieSchema'); if(!ld){ld=document.createElement('script');ld.id='movieSchema';ld.type='application/ld+json';document.head.appendChild(ld);} ld.textContent=JSON.stringify({"@context":"https://schema.org","@type":"Movie","name":movie.title||'Movie',"image":movie.poster?[movie.poster]:[],"description":movie.description||desc,"dateCreated":movie.year?String(movie.year):undefined,"aggregateRating":movie.rating?{"@type":"AggregateRating","ratingValue":String(movie.rating),"bestRating":"10"}:undefined,"url":url});}
+
+    async function loadMovie(){const wanted=slug(getSlug()); if(!wanted){showError();return;} try{let found=null; {const snap=await db.collection('movies').get(); snap.forEach(doc=>{const m={...doc.data(),id:doc.id}; if(!found && (slug(m.title)===wanted || String(m.id)===wanted)) found=m;});} if(!found){showError();return;} setMeta(found); const poster=esc(found.poster||''); const title=esc(found.title||'Untitled'); const yt=String(found.youtubeId||'').trim(); const videoId=getYouTubeId(yt); document.getElementById('movieContent').innerHTML=`<div><img class="movie-detail-poster" src="${poster}" alt="${title} movie poster" onerror="this.style.display='none'" loading="lazy" decoding="async"></div><div><h1>${title} Explained in Hindi</h1><div class="movie-meta"><span>⭐ ${esc(found.rating||'N/A')}</span><span>📅 ${esc(found.year||'N/A')}</span><span>🎬 ${esc(found.category||'Movie')}</span><span>⏱ ${esc(found.duration||'N/A')}</span></div><p class="movie-description description-3line">${esc(found.description||`Watch ${found.title||'this movie'} explanation, story, review and details in Hindi on MoviesExplain.`)}</p>${videoId?`<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" title="${title} Explained in Hindi" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`:''}</div>`; document.getElementById('loading').style.display='none'; document.getElementById('movieContent').style.display='grid';}catch(e){console.error(e);showError();}}
+    function showError(){document.getElementById('loading').style.display='none';document.getElementById('error').style.display='block';}
+    window.addEventListener('DOMContentLoaded',loadMovie);
+  </script>
+</body>
+</html>

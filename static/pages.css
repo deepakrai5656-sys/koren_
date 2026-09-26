@@ -1,0 +1,34 @@
+/* Shared inner-page styling for MoviesExplain */
+.info-page{width:min(1100px,calc(100% - 32px));margin:36px auto 70px;}
+.info-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:24px;background:linear-gradient(180deg,rgba(16,21,29,.94),rgba(8,11,16,.98));box-shadow:0 24px 70px rgba(0,0,0,.35);padding:28px 30px 34px;}
+.info-card:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,#ef233c,transparent);opacity:.9;}
+.info-breadcrumb{display:flex;gap:8px;align-items:center;color:#7d8794;font-size:.82rem;margin-bottom:24px;}
+.info-breadcrumb a{color:#aeb7c2;text-decoration:none;}
+.info-breadcrumb a:hover{color:#fff;}
+.info-header{max-width:820px;padding:10px 0 24px;}
+.info-kicker{display:inline-flex;align-items:center;padding:6px 10px;border:1px solid rgba(239,35,60,.28);border-radius:999px;background:rgba(239,35,60,.08);color:#ff596e;font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;}
+.info-header h1{margin:15px 0 10px;font-size:clamp(2rem,5vw,3.3rem);line-height:1.05;color:#fff;}
+.info-header .intro{margin:0;color:#9da7b4;line-height:1.75;font-size:1rem;}
+.info-content{display:grid;gap:1px;margin-top:10px;border-top:1px solid rgba(255,255,255,.06);}
+.info-section{padding:24px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.info-section:last-child{border-bottom:0;}
+.info-section h2{margin:0 0 9px;color:#fff;font-size:1.12rem;}
+.info-section p,.info-section li{color:#8f99a6;line-height:1.8;font-size:.92rem;}
+.info-section ul,.info-section ol{padding-left:22px;margin:10px 0 0;}
+.info-section a{color:#ff596e;}
+.brand-mark{width:42px;height:42px;object-fit:cover;border-radius:11px;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 26px rgba(0,0,0,.28);}
+.brand-wordmark{font-size:1.25rem;font-weight:850;letter-spacing:-.03em;color:#f5f7fa;white-space:nowrap;}
+.brand-wordmark span{color:var(--accent);}
+.footer-brand-logo{gap:10px;}
+.footer-brand-mark{width:40px;height:40px;border-radius:10px;}
+@media (max-width:640px){.info-page{width:min(100% - 20px,1100px);margin-top:20px}.info-card{padding:22px 18px 28px;border-radius:18px}.brand-wordmark{font-size:1.08rem}.brand-mark{width:38px;height:38px}.footer-brand-mark{width:36px;height:36px}}
+
+
+/* MoviesExplain: show descriptions in a maximum of 3 lines */
+.description-3line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}

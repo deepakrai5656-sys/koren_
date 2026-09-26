@@ -1,0 +1,2 @@
+MoviesExplain Search Fix v2
+Leprechaun is no longer blocked by frontend filtering.
