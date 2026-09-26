@@ -14,17 +14,20 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "main.py"
-    },
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/static/index.html"
-    }
-  ]
-}
+  {
+    "src": "/api/(.*)",
+    "dest": "main.py"
+  },
+  {
+    "src": "/(.*\\.(css|js|png|webp|jpg|jpeg|svg|ico))",
+    "dest": "/static/$1"
+  },
+  {
+    "src": "/static/(.*)",
+    "dest": "/static/$1"
+  },
+  {
+    "src": "/",
+    "dest": "/static/index.html"
+  }
+]
