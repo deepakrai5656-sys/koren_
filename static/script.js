@@ -808,77 +808,100 @@ function getPersistentAutoTrailers() {
 
 async function fetchLatestTrailers(force = false) {
   const now = Date.now();
-  if (!force && latestTrailerMovies.length && (now - latestTrailersLoadedAt) < TRAILER_CACHE_MS) {
+
+  if (
+    !force &&
+    latestTrailerMovies.length &&
+    (now - latestTrailersLoadedAt) < TRAILER_CACHE_MS
+  ) {
     return latestTrailerMovies;
   }
+
   if (latestTrailersLoading) return latestTrailersLoading;
 
   const apiBase = "https://koren-six.vercel.app";
-  const queries = [
-    "new Bollywood movie trailer",
-    "new Hindi movie trailer",
-    "new Hollywood movie trailer"
-  ];
 
   latestTrailersLoading = (async () => {
     try {
-      const responses = await Promise.all(
-        queries.map(async (query) => {
-          const url = `${apiBase}/api/youtube?q=${encodeURIComponent(query)}&max_results=8`;
-          const response = await fetch(url, { cache: "no-store" });
-          if (!response.ok) throw new Error(`Trailer API ${response.status}`);
-          const data = await response.json();
-          return Array.isArray(data.results) ? data.results : [];
-        })
-      );
+      const url = `${apiBase}/api/trailers?limit=30`;
+
+      const response = await fetch(url, {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error(`Trailer API ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const results = Array.isArray(data.results)
+        ? data.results
+        : [];
 
       const seen = new Set();
-      const combined = [];
+      const trailers = [];
 
-      responses.flat().forEach((item) => {
-        const videoId = String(item.videoId || item.id?.videoId || "").trim();
-        const title = String(item.title || item.snippet?.title || "").trim();
+      results.forEach((item) => {
+        const videoId = String(
+          item.youtubeId ||
+          item.videoId ||
+          item.id ||
+          ""
+        ).trim();
+
+        const title = String(
+          item.title ||
+          ""
+        ).trim();
+
         if (!videoId || !title || seen.has(videoId)) return;
 
-        const lower = title.toLowerCase();
-        // Keep actual trailer/teaser results and avoid obvious songs/reviews.
-        const looksLikeTrailer = /trailer|teaser|official/i.test(title);
-        const looksLikeNoise = /song|lyric|reaction|review|explained|shorts/i.test(lower);
-        if (!looksLikeTrailer || looksLikeNoise) return;
-
         seen.add(videoId);
-        combined.push({
+
+        trailers.push({
           id: `auto-yt-${videoId}`,
-          title,
-          year: new Date().getFullYear().toString(),
+          title: title,
+          year: String(
+            item.year ||
+            new Date().getFullYear()
+          ),
           category: "Trailers",
-          duration: "YouTube",
-          rating: "N/A",
-          description: String(item.description || item.snippet?.description || "Latest trailer from YouTube."),
-          poster: String(item.thumbnail || item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`),
+          duration: item.duration || "YouTube",
+          rating: item.rating || "N/A",
+          description:
+            item.description ||
+            "Latest movie trailer from YouTube.",
+          poster:
+            item.poster ||
+            `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
           youtubeId: videoId,
-          localOnly: true,
-          autoTrailer: true
+          url:
+            item.url ||
+            `https://www.youtube.com/watch?v=${videoId}`,
+          embedUrl:
+            item.embedUrl ||
+            `https://www.youtube.com/embed/${videoId}`,
+          channelTitle:
+            item.channelTitle || "",
+          publishedAt:
+            item.publishedAt || "",
+          autoTrailer: true,
+          localOnly: true
         });
       });
 
-      const stored = getPersistentAutoTrailers();
-      const mergedById = new Map();
-      [...stored, ...combined].forEach((movie) => {
-        const id = String(movie.youtubeId || "").trim();
-        if (!id) return;
-        mergedById.set(id, {
-          ...movie,
-          discoveredAt: movie.discoveredAt || Date.now()
-        });
-      });
-
-      const persisted = saveAutoTrailers([...mergedById.values()]);
-      latestTrailerMovies = persisted;
+      latestTrailerMovies = trailers;
       latestTrailersLoadedAt = Date.now();
+
       return latestTrailerMovies;
+
     } catch (error) {
-      console.warn("Latest trailers could not be loaded:", error);
+      console.warn(
+        "Latest trailers could not be loaded:",
+        error
+      );
+
       return latestTrailerMovies;
     } finally {
       latestTrailersLoading = null;
