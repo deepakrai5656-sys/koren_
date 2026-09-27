@@ -732,7 +732,69 @@ async def cron_trailers(request: Request):
     except Exception as exc:
         logger.exception("Persistent trailer job failed")
         raise HTTPException(status_code=500, detail={"error": True, "description": str(exc)})
-        
+# --- Public persistent trailer feed ------------------------------------------
+# Reads trailers saved by the Vercel Cron job from Firestore.
+@app.get("/api/trailers", tags=["YouTube"],
+         summary="Get saved automatic trailers")
+async def get_saved_trailers(limit: int = 30):
+    """Return latest trailers saved in the autoTrailers Firestore collection."""
+
+    limit = max(1, min(limit, 50))
+
+    try:
+        db = _firebase_db()
+
+        # Read the collection without relying on a Firestore index.
+        snapshots = await asyncio.to_thread(
+            lambda: list(db.collection("autoTrailers").stream())
+        )
+
+        trailers = []
+
+        for snapshot in snapshots:
+            item = snapshot.to_dict() or {}
+
+            # Convert Firestore timestamps into JSON-safe strings.
+            for field in ("publishedAt", "createdAt", "updatedAt"):
+                value = item.get(field)
+                if hasattr(value, "isoformat"):
+                    item[field] = value.isoformat()
+
+            youtube_id = str(item.get("youtubeId") or "").strip()
+
+            if not youtube_id:
+                continue
+
+            trailers.append(item)
+
+        # Newest first.
+        trailers.sort(
+            key=lambda x: str(
+                x.get("publishedAt")
+                or x.get("createdAt")
+                or x.get("updatedAt")
+                or ""
+            ),
+            reverse=True,
+        )
+
+        trailers = trailers[:limit]
+
+        return {
+            "ok": True,
+            "count": len(trailers),
+            "results": trailers,
+        }
+
+    except Exception as exc:
+        logger.exception("Failed to load saved trailers")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": True,
+                "description": str(exc),
+            },
+        )        
 @app.get("/", include_in_schema=False)
 async def home():
     return FileResponse("static/index.html")
