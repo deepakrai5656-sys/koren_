@@ -8,7 +8,7 @@
   "rewrites": [
     {
       "source": "/movie/:path*",
-      "destination": "/movie.html"
+      "destination": "/static/movie.html"
     }
   ]
 }
