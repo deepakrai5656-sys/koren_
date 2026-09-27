@@ -4,5 +4,11 @@
       "path": "/api/cron-trailers",
       "schedule": "0 3 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/movie/:path*",
+      "destination": "/movie.html"
+    }
   ]
 }
