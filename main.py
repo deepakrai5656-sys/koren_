@@ -741,6 +741,9 @@ async def home():
 async def health_check():
     """Returns healthy status if the API is running."""
     return {"status": "healthy", "version": "1.1.0", "message": "MyDramaList Unofficial API is running"}
+    @app.get("/movie/{slug:path}", include_in_schema=False)
+async def movie_page(slug: str):
+    return FileResponse("static/movie.html")
 app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
 if __name__ == "__main__":
     import uvicorn
